@@ -95,7 +95,7 @@ st.sidebar.markdown("""
 
 st.sidebar.title('Navigation')
 app_mode = st.sidebar.radio(
-    label="Navigation Menu",  # Non-empty label for accessibility
+    label="Navigation Menu",
     options=[
         "View All Books",
         "Add Book",
@@ -104,7 +104,7 @@ app_mode = st.sidebar.radio(
         "Search Books",
         "Borrow Book"
     ],
-    label_visibility="collapsed"  # Hide label visually
+    label_visibility="collapsed"
 )
 
 # Assign icons to each mode
@@ -123,12 +123,12 @@ st.sidebar.markdown(f"**{icons[app_mode]} {app_mode}**")
 if app_mode == "View All Books":
     st.header("All Books")
     st.write("Displaying books fetched from Google Books API.")
-    cols = st.columns(3)  # Adjust column number based on desired grid width
+    cols = st.columns(3)
 
     with st.container():
         st.markdown('<div class="container">', unsafe_allow_html=True)
         for i, book in enumerate(st.session_state.books):
-            with cols[i % 3]:  # Distribute cards across columns
+            with cols[i % 3]:
                 st.markdown(f"""
                 <div class="card">
                     <h3>{book['title']}</h3>
@@ -143,26 +143,10 @@ if app_mode == "View All Books":
 elif app_mode == "Add Book":
     st.header("Add a New Book")
     with st.form("add_book_form"):
-        book_title = st.text_input(
-            label="Title",  # Non-empty label for accessibility
-            placeholder="Enter the title of the book",
-            value=""
-        )
-        book_author = st.text_input(
-            label="Author",  # Non-empty label for accessibility
-            placeholder="Enter the author of the book",
-            value=""
-        )
-        book_isbn = st.text_input(
-            label="ISBN",  # Non-empty label for accessibility
-            placeholder="Enter the ISBN of the book",
-            value=""
-        )
-        book_cover_url = st.text_input(
-            label="Book Cover Image URL",  # Non-empty label for accessibility
-            placeholder="Enter the URL of the book cover image",
-            value=""
-        )
+        book_title = st.text_input("Title", placeholder="Enter the title of the book")
+        book_author = st.text_input("Author", placeholder="Enter the author of the book")
+        book_isbn = st.text_input("ISBN", placeholder="Enter the ISBN of the book")
+        book_cover_url = st.text_input("Book Cover Image URL", placeholder="Enter the URL of the book cover image")
         submit_button = st.form_submit_button("Add Book")
         
         if submit_button:
@@ -180,30 +164,11 @@ elif app_mode == "Add Book":
 elif app_mode == "Update Book":
     st.header("Update Book Details")
     with st.form("update_book_form"):
-        isbn_to_update = st.text_input(
-            label="Enter ISBN of the book to update",  # Non-empty label for accessibility
-            placeholder="Enter the ISBN of the book you want to update",
-            value=""
-        )
-        book_title = st.text_input(
-            label="New Title",  # Non-empty label for accessibility
-            placeholder="Enter the new title (optional)",
-            value=""
-        )
-        book_author = st.text_input(
-            label="New Author",  # Non-empty label for accessibility
-            placeholder="Enter the new author (optional)",
-            value=""
-        )
-        book_cover_url = st.text_input(
-            label="New Book Cover Image URL",  # Non-empty label for accessibility
-            placeholder="Enter the new cover image URL (optional)",
-            value=""
-        )
-        status = st.selectbox(
-            label="Status",  # Non-empty label for accessibility
-            options=["Available", "Borrowed"]
-        )
+        isbn_to_update = st.text_input("Enter ISBN of the book to update", placeholder="Enter the ISBN of the book you want to update")
+        book_title = st.text_input("New Title", placeholder="Enter the new title (optional)")
+        book_author = st.text_input("New Author", placeholder="Enter the new author (optional)")
+        book_cover_url = st.text_input("New Book Cover Image URL", placeholder="Enter the new cover image URL (optional)")
+        status = st.selectbox("Status", options=["Available", "Borrowed"])
         submit_button = st.form_submit_button("Update Book")
 
         if submit_button:
@@ -229,11 +194,7 @@ elif app_mode == "Update Book":
 elif app_mode == "Delete Book":
     st.header("Delete a Book")
     with st.form("delete_book_form"):
-        isbn_to_delete = st.text_input(
-            label="Enter ISBN of the book to delete",  # Non-empty label for accessibility
-            placeholder="Enter the ISBN of the book you want to delete",
-            value=""
-        )
+        isbn_to_delete = st.text_input("Enter ISBN of the book to delete", placeholder="Enter the ISBN of the book you want to delete")
         submit_button = st.form_submit_button("Delete Book")
 
         if submit_button:
@@ -252,45 +213,30 @@ elif app_mode == "Delete Book":
 
 elif app_mode == "Search Books":
     st.header("Search Books")
-    search_term = st.text_input(
-        label="Search Term",  # Non-empty label for accessibility
-        placeholder="Enter search term (e.g., book title, author)",
-        value=""
-    )
+    search_term = st.text_input("Search Term", placeholder="Enter a search term")
     if st.button("Search"):
         if search_term:
-            books = fetch_books(search_term)
-            if books:
-                st.session_state.books = books
-            else:
-                st.session_state.books = []
-                st.error("No books found.")
+            st.session_state.books = fetch_books(search_term)
+            st.success(f'Search results for "{search_term}":')
         else:
             st.error("Please enter a search term.")
 
 elif app_mode == "Borrow Book":
     st.header("Borrow a Book")
     with st.form("borrow_book_form"):
-        isbn_to_borrow = st.text_input(
-            label="Enter ISBN of the book to borrow",  # Non-empty label for accessibility
-            placeholder="Enter the ISBN of the book you want to borrow",
-            value=""
-        )
+        book_title = st.text_input("Enter the title of the book to borrow", placeholder="Enter the title of the book you want to borrow")
         submit_button = st.form_submit_button("Borrow Book")
 
         if submit_button:
-            if isbn_to_borrow:
+            if book_title:
                 book_found = False
                 for book in st.session_state.books:
-                    if book['isbn'] == isbn_to_borrow:
-                        if book['status'] == "Available":
-                            book['status'] = "Borrowed"
-                            st.success(f'Book "{isbn_to_borrow}" borrowed successfully!')
-                        else:
-                            st.error("Book is already borrowed.")
+                    if book['title'].lower() == book_title.lower() and book['status'] == "Available":
+                        book['status'] = "Borrowed"
+                        st.success(f'You have borrowed "{book_title}".')
                         book_found = True
                         break
                 if not book_found:
-                    st.error("Book not found.")
+                    st.error("Book not available or not found.")
             else:
-                st.error("Please enter ISBN of the book to borrow.")
+                st.error("Please enter the title of the book to borrow.")
