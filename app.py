@@ -4,25 +4,31 @@ from PIL import Image
 from io import BytesIO
 
 # Constants
-GOOGLE_BOOKS_API_URL = "https://www.googleapis.com/books/v1/volumes?q=fiction"
+GOOGLE_BOOKS_API_URL = "https://www.googleapis.com/books/v1/volumes"
 
 # Function to fetch book data from Google Books API
 def fetch_books(search_term=None):
     query = search_term if search_term else "fiction"
-    response = requests.get(f"https://www.googleapis.com/books/v1/volumes?q={query}")
-    data = response.json()
-    books = []
-    for item in data.get('items', []):
-        volume_info = item.get('volumeInfo', {})
-        book = {
-            'title': volume_info.get('title', 'No Title'),
-            'author': ', '.join(volume_info.get('authors', [])),
-            'isbn': next((identifier.get('identifier') for identifier in volume_info.get('industryIdentifiers', []) if identifier.get('type') == 'ISBN_13'), 'No ISBN'),
-            'cover_url': volume_info.get('imageLinks', {}).get('thumbnail', ''),
-            'status': 'Available'
-        }
-        books.append(book)
-    return books
+    url = f"{GOOGLE_BOOKS_API_URL}?q={query}"
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # Check for HTTP errors
+        data = response.json()
+        books = []
+        for item in data.get('items', []):
+            volume_info = item.get('volumeInfo', {})
+            book = {
+                'title': volume_info.get('title', 'No Title'),
+                'author': ', '.join(volume_info.get('authors', [])),
+                'isbn': next((identifier.get('identifier') for identifier in volume_info.get('industryIdentifiers', []) if identifier.get('type') == 'ISBN_13'), 'No ISBN'),
+                'cover_url': volume_info.get('imageLinks', {}).get('thumbnail', ''),
+                'status': 'Available'
+            }
+            books.append(book)
+        return books
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error fetching data: {e}")
+        return []
 
 # Initialize session state
 if 'books' not in st.session_state:
@@ -32,6 +38,7 @@ if 'books' not in st.session_state:
 def fetch_image(image_url):
     try:
         response = requests.get(image_url)
+        response.raise_for_status()  # Check for HTTP errors
         image = Image.open(BytesIO(response.content))
         return image
     except Exception as e:
@@ -247,20 +254,17 @@ elif app_mode == "Search Books":
     st.header("Search Books")
     search_term = st.text_input(
         label="Search Term",  # Non-empty label for accessibility
-        placeholder="Enter title, author, or ISBN to search",
+        placeholder="Enter search term (e.g., book title, author)",
         value=""
     )
-    search_button = st.button("Search")
-
-    if search_button:
+    if st.button("Search"):
         if search_term:
-            results = fetch_books(search_term)
-            if results:
-                st.write("Search results:")
-                for book in results:
-                    st.write(f"Title: {book['title']}, Author: {book['author']}, ISBN: {book['isbn']}")
+            books = fetch_books(search_term)
+            if books:
+                st.session_state.books = books
             else:
-                st.write("No results found.")
+                st.session_state.books = []
+                st.error("No books found.")
         else:
             st.error("Please enter a search term.")
 
@@ -281,7 +285,7 @@ elif app_mode == "Borrow Book":
                     if book['isbn'] == isbn_to_borrow:
                         if book['status'] == "Available":
                             book['status'] = "Borrowed"
-                            st.success(f'Book "{book["title"]}" borrowed successfully!')
+                            st.success(f'Book "{isbn_to_borrow}" borrowed successfully!')
                         else:
                             st.error("Book is already borrowed.")
                         book_found = True
